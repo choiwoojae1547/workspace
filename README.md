@@ -2,6 +2,17 @@
 
 This repository documents the data collection workflow within a Slurm-based cluster using SSH and simple shell scripts.
 
+lsf + slurm 명령어 통합을 위한 메타 스케줄러 커맨드 통합 스크립트 작업 내용입니다.
+lsf의 명령어 + slurm의 명령어 조합을 통해 공통된 m 커맨드 스크립트 입니다.
+예) mhosts -> bhosts + sinfo 정보 파싱..
+
+전체적인 작업 개요는
+프록시 서버를 통해 로그인 서버로 접속합니다.
+로그인 서버에서 m 커맨드를 적용시켜야 하며 
+LSF의 클러스터 명은 c1 / 마스터 명은 lmaster
+SLURM의 클러스터 명은 c2 / 마스터 명은 lmaster
+입니다.
+자세한 데이터 흐름 개요는 밑은 도식표를 참고해주세요.
 ---
 
 ## 📊 Data Flow Overview
@@ -9,7 +20,11 @@ This repository documents the data collection workflow within a Slurm-based clus
 <pre><code>```
 
 Data Flow Overview
-[Login Server]
+[Proxy Server]
+    │
+    │ ssh
+    ▼             ssh
+[Login Server] ──────────▶ lmaster
     │
     │ ssh
     ▼
