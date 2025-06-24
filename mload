@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# LSF 설정
+LSF_MASTER="lmaster"
+LSF_CLUSTER="C1"
+LSF_TOP="/data/lsf"
+
+# SLURM 설정
+SLURM_MASTER="smaster"
+
+# 출력 헤더
+printf "%-10s %-15s %-15s %-14s %5s %5s %5s %5s %5s %3s %5s %8s %8s %8s\n" \
+  "SCHEDULER" "CLUSTER" "HOST_NAME" "STATUS" "r15s" "r1m" "r5m" "ut" "pg" "ls" "it" "tmp" "swp" "mem"
+
+# LSF Section
+ssh "$LSF_MASTER" bash << EOF
+. $LSF_TOP/conf/profile.lsf
+lsload -w | tail -n +2 | sort -k1,1 | awk -v cluster="$LSF_CLUSTER" '
+{
+    scheduler = "LSF"
+    printf "%-10s %-15s %-15s %-14s %5s %5s %5s %5s %5s %3s %5s %8s %8s %8s\n", \
+           scheduler, cluster, \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12
+}'
+EOF
+
+# SLURM Section (단일 SSH)
+ssh "$SLURM_MASTER" /opt/meta_scheduler/bin/slurminfo_all.sh
+
+
+############################################################
+# Data Flow Overview
+#
+#  [Login Server]
+#       │
+#       │ ssh
+#       ▼
+#  [smaster] ──────────────┐
+#     └─ slurminfo_all.sh  │
+#     └─ slurminfo.sh      │
+#                          │
+#     ┌────────────────────┴────────────────────┐
+#     │ ssh by smaster                          │ ssh by smaster
+#     ▼                                         ▼
+# [snode01] ─ slurminfo.sh            [snode02] ─ slurminfo.sh
+#
+#   ┌────────────────────────────────────────────────────────┐
+#   │  smaster collects the results from all slurminfo.sh    │
+#   │  results and sends them to stdout                      │
+#   └────────────────────────────────────────────────────────┘
+#                          │
+#                          ▼
+#  [Login Server] ←←←←← Output collected and formatted
+#
+############################################################
