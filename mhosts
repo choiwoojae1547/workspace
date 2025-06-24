@@ -1,0 +1,53 @@
+#!/bin/bash
+
+LSF_MASTER="lmaster"
+LSF_CLUSTER="C1"
+LSF_TOP="/data/lsf"
+
+SLURM_MASTER="smaster"
+SLURM_CLUSTER="C2"
+
+# Header
+printf "%-12s %-15s %-12s %-10s %10s %10s\n" \
+  "SCHEDULER" "CLUSTER" "HOST_NAME" "STATUS" "TOTAL_CORES" "USED_CORES"
+
+#LSF Section
+ssh "$LSF_MASTER" bash << EOF
+. $LSF_TOP/conf/profile.lsf
+bhosts | tail -n +2 | awk -v cluster="C1" '
+{
+    scheduler = "LSF"
+    host = \$1
+    status = \$2
+    max = \$4     # 총 코어 수
+    run = \$6     # 사용 중인 코어 수
+    printf "%-12s %-15s %-12s %-10s %10d %10d\n", scheduler, cluster, host, status, max, run
+}'
+EOF
+
+# SLURM Section
+ssh "$SLURM_MASTER" bash << EOF
+sinfo -h -o '%n %t %C' | awk -v cluster="C2" '
+{
+    scheduler = "SLURM"
+    host = \$1
+    status_raw = \$2
+
+    # 상태 변환
+    if (status_raw == "idle") {
+        status = "ok"
+    } else if (status_raw == "alloc") {
+        status = "closed"
+    } else if (status_raw == "down" || status_raw == "drain" || status_raw == "fail") {
+        status = "unavail"
+    } else {
+        status = status_raw  # fallback: 그대로 출력
+    }
+
+    split(\$3, cores, "/")  # format: alloc/idle/other/total
+    alloc = cores[1]
+    total = cores[4]
+
+    printf "%-12s %-15s %-12s %-10s %10d %10d\n", scheduler, cluster, host, status, total, alloc
+}'
+EOF
