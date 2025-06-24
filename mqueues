@@ -1,0 +1,93 @@
+#!/bin/bash
+
+LSF_MASTER="lmaster"
+SLURM_MASTER="smaster"
+LSF_CLUSTER="C1"
+SLURM_CLUSTER="C2"
+
+# 출력 헤더
+printf "%-12s %-15s %-15s %-5s %-15s %-5s %-5s %-5s %-5s %-6s %-6s %-5s %-5s\n" \
+  "SCHEDULER" "CLUSTER" "QUEUE_NAME" "PRIO" "STATUS" "MAX" "JL/U" "JL/P" "JL/H" "NJOBS" "PEND" "RUN" "SUSP"
+
+
+#LSF Section
+ssh "$LSF_MASTER" bash << EOF
+source /data/lsf/conf/profile.lsf
+bqueues -noheader | awk -v cluster="$LSF_CLUSTER" '
+{
+  scheduler = "LSF"
+  printf "%-12s %-15s %-15s %-5s %-15s %-5s %-5s %-5s %-5s %-6s %-6s %-5s %-5s\n", \
+         scheduler, cluster, \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11
+}'
+EOF
+
+#SLURM Section
+ssh "$SLURM_MASTER" bash << EOF
+cluster="$SLURM_CLUSTER"
+
+# squeue 상태별 job 수 계산
+squeue -h -o "%P %T" | awk '
+{
+  gsub(/\*/, "", \$1)
+  key = \$1
+  if (\$2 == "RUNNING")   run[key]++
+  else if (\$2 == "PENDING") pend[key]++
+  else if (\$2 == "SUSPENDED") susp[key]++
+}
+END {
+  for (k in run)   printf "RUN %s %d\n", k, run[k]
+  for (k in pend)  printf "PEND %s %d\n", k, pend[k]
+  for (k in susp)  printf "SUSP %s %d\n", k, susp[k]
+}
+' > /tmp/slurm_job_counts.txt
+
+declare -A RUN PEND SUSP
+while read type part count; do
+  case \$type in
+    RUN)  RUN[\$part]=\$count ;;
+    PEND) PEND[\$part]=\$count ;;
+    SUSP) SUSP[\$part]=\$count ;;
+  esac
+done < /tmp/slurm_job_counts.txt
+
+# 파티션 상태 출력
+scontrol show partition | awk -v cluster="$SLURM_CLUSTER" '
+BEGIN {
+  while ((getline < "/tmp/slurm_job_counts.txt") > 0) {
+    split(\$0, a, " ")
+    if (a[1] == "RUN")  run[a[2]] = a[3]
+    if (a[1] == "PEND") pend[a[2]] = a[3]
+    if (a[1] == "SUSP") susp[a[2]] = a[3]
+  }
+}
+/^PartitionName=/ {
+  part = substr(\$1, index(\$1, "=")+1)
+  prio = "-"
+  jl_u = jl_p = jl_h = "-"
+  max = "-"
+}
+/MaxCPUsPerNode=/ {
+  if (\$1 ~ /MaxCPUsPerNode=/ && \$1 !~ /UNLIMITED/) {
+    split(\$1, a, "="); max = a[2]
+  }
+}
+/TRES=/ && max == "-" {
+  match(\$0, /cpu=([0-9]+)/, arr)
+  if (arr[1] != "") max = arr[1]
+}
+/State=/ {
+  split(\$1, a, "="); state = a[2]
+  if (state ~ /UP/ && state !~ /DRAIN|INACTIVE/) status = "Open:Active"
+  else if (state ~ /UP/ && state ~ /DRAIN|INACTIVE/) status = "Open:Inact"
+  else if (state ~ /DOWN|INACTIVE/) status = "Closed:Inact"
+  else status = "Closed:Active"
+
+  r = run[part]+0
+  p = pend[part]+0
+  s = susp[part]+0
+  n = r + p + s
+
+  printf "%-12s %-15s %-15s %-5s %-15s %-5s %-5s %-5s %-5s %-6d %-6d %-5d %-5d\n", \
+         "SLURM", cluster, part, prio, status, max, jl_u, jl_p, jl_h, n, p, r, s
+}'
+EOF
