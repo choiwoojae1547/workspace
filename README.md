@@ -1,6 +1,6 @@
 # 🧾 Workspace: Business Records & Workflow
 
-This repository tracks workflow and data collection across a Slurm-based distributed environment.
+This repository documents the data collection workflow within a Slurm-based cluster using SSH and simple shell scripts.
 
 ---
 
@@ -14,40 +14,49 @@ Data Flow Overview
 │ ssh
 ▼
 [smaster] ──────────────┐
-    └─ slurminfo_all.sh │
-        └─ slurminfo.sh │
-                        │
-┌───────────────────────┴────────────────────┐
-│ ssh by smaster                             │ ssh by smaster
-▼                                            ▼
-[snode01] ─ slurminfo.sh                 [snode02] ─ slurminfo.sh
+├─ slurminfo_all.sh │
+└─ slurminfo.sh │
+│
+┌────────────────────┴────────────────────┐
+│ ssh by smaster │ ssh by smaster
+▼ ▼
+[snode01] ─ slurminfo.sh [snode02] ─ slurminfo.sh
 ┌────────────────────────────────────────────────────────┐
-│   smaster collects the results from all slurminfo.sh   │
-│           results and sends them to stdout             │
+│ smaster collects the results from all slurminfo.sh │
+│ results and sends them to stdout │
 └────────────────────────────────────────────────────────┘
-                        │
-                        ▼
+│
+▼
 [Login Server] ←←←←← Output collected and formatted
 ############################################################
 
+yaml
+복사
+편집
 
+---
 
-## 🛠 Components
+## 🧩 Components
 
-| Role           | Description                                 |
-|----------------|---------------------------------------------|
-| `Login Server` | Starts the collection process via SSH       |
-| `smaster`      | Runs `slurminfo_all.sh`, aggregates results |
-| `snode01/02`   | Executes `slurminfo.sh`, returns metrics    |
+| Role         | Description                                        |
+|--------------|----------------------------------------------------|
+| `Login Server` | Starts the collection process via SSH              |
+| `smaster`      | Runs `slurminfo_all.sh`, aggregates results       |
+| `snode01/02`   | Executes `slurminfo.sh`, returns metrics to master|
+
+---
 
 ## ▶️ Usage
 
 ```bash
 ssh smaster './slurminfo_all.sh'
-Results will be collected and shown on the login server terminal.
+Results will be collected from all compute nodes and displayed on the login server terminal.
 
 📁 Directory Structure
+bash
+복사
+편집
 .
-├── slurminfo_all.sh
-├── slurminfo.sh
-└── README.md
+├── slurminfo_all.sh     # Orchestration script on smaster
+├── slurminfo.sh         # Node-level data collection script
+└── README.md            # This file
