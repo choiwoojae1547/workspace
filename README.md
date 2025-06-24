@@ -1,78 +1,53 @@
 # 🧾 Workspace: Business Records & Workflow
 
-This repository is used to track workflow and data collection within a distributed Slurm-based cluster environment.
+This repository tracks workflow and data collection across a Slurm-based distributed environment.
 
 ---
 
-## 🔄 Workflow Overview
+## 📊 Data Flow Overview
 
-The system is composed of the following nodes:
+############################################################
 
-- **Login Server**: Entry point for users.
-- **smaster**: Central node responsible for orchestrating data collection.
-- **snode01 / snode02**: Worker nodes executing Slurm info scripts.
-
----
-
-## 📊 Data Flow Diagram
-
+Data Flow Overview
 [Login Server]
 │
 │ ssh
 ▼
 [smaster] ──────────────┐
-└─ slurminfo_all.sh │
-└─ slurminfo.sh │
-│
-┌────────────────────┴────────────────────┐
-│ ssh by smaster │ ssh by smaster
-▼ ▼
-[snode01] ─ slurminfo.sh [snode02] ─ slurminfo.sh
-
+    └─ slurminfo_all.sh │
+        └─ slurminfo.sh │
+                        │
+┌───────────────────────┴────────────────────┐
+│ ssh by smaster                             │ ssh by smaster
+▼                                            ▼
+[snode01] ─ slurminfo.sh                 [snode02] ─ slurminfo.sh
 ┌────────────────────────────────────────────────────────┐
-│ smaster collects the results from all slurminfo.sh │
-│ results and sends them to stdout │
+│   smaster collects the results from all slurminfo.sh   │
+│           results and sends them to stdout             │
 └────────────────────────────────────────────────────────┘
-│
-▼
+                        │
+                        ▼
 [Login Server] ←←←←← Output collected and formatted
+############################################################
 
-yaml
-복사
-편집
 
----
 
-## 🛠 Scripts Used
+## 🛠 Components
 
-| Script            | Location   | Description                                |
-|-------------------|------------|--------------------------------------------|
-| `slurminfo.sh`    | All nodes  | Collects local Slurm node info             |
-| `slurminfo_all.sh`| smaster    | Aggregates results from all compute nodes  |
+| Role           | Description                                 |
+|----------------|---------------------------------------------|
+| `Login Server` | Starts the collection process via SSH       |
+| `smaster`      | Runs `slurminfo_all.sh`, aggregates results |
+| `snode01/02`   | Executes `slurminfo.sh`, returns metrics    |
 
----
+## ▶️ Usage
 
-## 📦 How to Use
-
-1. SSH into the login server.
-2. Execute the orchestration script:
-   ```bash
-   ssh smaster './slurminfo_all.sh'
-View the collected output returned to the login server's terminal.
+```bash
+ssh smaster './slurminfo_all.sh'
+Results will be collected and shown on the login server terminal.
 
 📁 Directory Structure
-복사
-편집
 .
 ├── slurminfo_all.sh
 ├── slurminfo.sh
 └── README.md
-📌 Notes
-Ensure ssh access is configured between smaster and all compute nodes.
-
-The slurminfo.sh script should be executable and located in the same directory across all nodes.
-
-yaml
-복사
-편집
-
