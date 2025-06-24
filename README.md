@@ -1,4 +1,4 @@
-# 🧾 Workspace: Business Records & Workflow
+# 🧾 Meta-Scheduler m-command Script: Business Records & Workflow
 
 This repository documents the **data collection and integration workflow** within a Slurm-based and LSF-based cluster using SSH and simple shell scripts.
 
