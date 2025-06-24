@@ -1,18 +1,43 @@
 # 🧾 Workspace: Business Records & Workflow
 
-This repository documents the data collection workflow within a Slurm-based cluster using SSH and simple shell scripts.
+This repository documents the **data collection and integration workflow** within a Slurm-based and LSF-based cluster using SSH and simple shell scripts.
 
-lsf + slurm 명령어 통합을 위한 메타 스케줄러 커맨드 통합 스크립트 작업 내용입니다.
-lsf의 명령어 + slurm의 명령어 조합을 통해 공통된 m 커맨드 스크립트 입니다.
-예) mhosts -> bhosts + sinfo 정보 파싱..
+---
 
-전체적인 작업 개요는
-프록시 서버를 통해 로그인 서버로 접속합니다.
-로그인 서버에서 m 커맨드를 적용시켜야 하며 
-LSF의 클러스터 명은 c1 / 마스터 명은 lmaster
-SLURM의 클러스터 명은 c2 / 마스터 명은 lmaster
-입니다.
-자세한 데이터 흐름 개요는 밑은 도식표를 참고해주세요.
+## 🎯 Purpose
+
+This project focuses on building a **meta-scheduler command wrapper** that unifies **LSF + Slurm commands** into a single, easy-to-use interface.
+
+✅ Example:
+- `mhosts` → parses and merges outputs from both `bhosts` (LSF) and `sinfo` (Slurm)
+- Other commands (e.g., `mqueues`, `mload`) follow the same logic
+
+These meta-commands allow operators to manage mixed scheduling environments more efficiently from one command namespace (`m*`).
+
+---
+
+## 🏗 Architecture & Configuration
+
+- **Login Access**: Connect to the system via a **proxy server → login server**
+- **Command Execution Point**: All `m*` scripts are executed on the **login server**
+- **Cluster Names**:
+  - **LSF**:
+    - Cluster name: `c1`
+    - Master node: `lmaster`
+  - **Slurm**:
+    - Cluster name: `c2`
+    - Master node: `smaster`
+
+📌 *All relevant SSH and scheduling communication is initiated from the login server.*
+
+---
+
+## 🧭 Data Flow Diagram
+
+See below for a visualized overview of the data flow across components.
+
+<details>
+<summary>📈 Click to view diagram</summary>
 ---
 
 ## 📊 Data Flow Overview
