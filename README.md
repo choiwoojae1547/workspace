@@ -6,7 +6,7 @@ This repository documents the data collection workflow within a Slurm-based clus
 
 ## 📊 Data Flow Overview
 
-<pre><code>```############################################################
+<pre><code>```
 
 Data Flow Overview
 [Login Server]
@@ -28,7 +28,7 @@ Data Flow Overview
                          │
                          ▼
                    [Login Server] ←←←←← Output collected and formatted
-############################################################ ```</code></pre>
+ ```</code></pre>
 
 
 ## 🧩 Components
