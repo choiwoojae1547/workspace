@@ -10,9 +10,9 @@ This repository documents the data collection workflow within a Slurm-based clus
 
 Data Flow Overview
 [Login Server]
-│
-│ ssh
-▼
+    │
+    │ ssh
+    ▼
 [smaster] ──────────────┐
     ├─ slurminfo_all.sh │
     └─ slurminfo.sh     │
